@@ -63,13 +63,22 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
 
       try {
         await fastify.db.users.delete(id);
-        const subscribers = (await fastify.db.users.findMany()).filter((item) =>
-          item.subscribedToUserIds.includes(id)
-        );
-        subscribers.forEach((user) =>
-          // TODO 
-           
-        );
+        (await fastify.db.users.findMany()).forEach(async (user) => {
+          if (user.subscribedToUserIds.includes(id)) {
+            removeIfInclude(user.subscribedToUserIds, id);
+            await fastify.db.users.change(user.id, user);
+          }
+        });
+        (await fastify.db.posts.findMany()).forEach(async (post) => {
+          if (post.userId === id) {
+            await fastify.db.posts.delete(post.id);
+          }
+        });
+        (await fastify.db.profiles.findMany()).forEach(async (profile) => {
+          if (profile.userId === id) {
+            await fastify.db.posts.delete(profile.id);
+          }
+        });
         return reply.code(200).send(str('User deleted'));
       } catch (err) {
         return reply.code(400).send(str('User not found'));
