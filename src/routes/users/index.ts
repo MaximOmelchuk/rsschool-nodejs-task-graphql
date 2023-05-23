@@ -1,16 +1,21 @@
+import { removeIfInclude } from './../../utils/commonUtils';
+import { idParamSchema } from './../../utils/reusedSchemas';
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
-import { idParamSchema } from '../../utils/reusedSchemas';
 import {
   createUserBodySchema,
   changeUserBodySchema,
   subscribeBodySchema,
 } from './schemas';
 import type { UserEntity } from '../../utils/DB/entities/DBUsers';
+import { addIfNotInclude, str } from '../../utils/commonUtils';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
 ): Promise<void> => {
-  fastify.get('/', async function (request, reply): Promise<UserEntity[]> {});
+  fastify.get('/', async function (request, reply): Promise<UserEntity[]> {
+    const users = await fastify.db.users.findMany();
+    return reply.code(200).send(users);
+  });
 
   fastify.get(
     '/:id',
@@ -19,7 +24,13 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const id = (request.params as { id: string }).id;
+      const user = await fastify.db.users.findOne({ key: 'id', equals: id });
+      return user
+        ? reply.code(200).send(user)
+        : reply.code(404).send(str('User not found'));
+    }
   );
 
   fastify.post(
@@ -29,7 +40,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         body: createUserBodySchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const body: any = request.body;
+      if (body?.firstName && body?.lastName && body?.email) {
+        const created = await fastify.db.users.create(body);
+        return reply.code(200).send(created);
+      } else {
+        return reply.code(400);
+      }
+    }
   );
 
   fastify.delete(
@@ -39,7 +58,23 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const id = (request.params as { id: string }).id;
+
+      try {
+        await fastify.db.users.delete(id);
+        const subscribers = (await fastify.db.users.findMany()).filter((item) =>
+          item.subscribedToUserIds.includes(id)
+        );
+        subscribers.forEach((user) =>
+          // TODO 
+           
+        );
+        return reply.code(200).send(str('User deleted'));
+      } catch (err) {
+        return reply.code(400).send(str('User not found'));
+      }
+    }
   );
 
   fastify.post(
@@ -50,7 +85,29 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const ownID: any = (request.body as { userId: 'string' }).userId;
+      const subID: any = (request.params as { id: 'string' }).id;
+
+      const subUser = await fastify.db.users.findOne({
+        key: 'id',
+        equals: subID,
+      });
+      const prevUser = await fastify.db.users.findOne({
+        key: 'id',
+        equals: ownID,
+      });
+      if (
+        !prevUser ||
+        !subUser ||
+        prevUser.subscribedToUserIds.includes(subUser.id)
+      ) {
+        return reply.code(400).send(str('User not found'));
+      }
+      addIfNotInclude(prevUser.subscribedToUserIds, subID);
+      const newUser = await fastify.db.users.change(ownID, prevUser);
+      return reply.code(200).send(newUser);
+    }
   );
 
   fastify.post(
@@ -61,7 +118,29 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const ownID: any = (request.body as { userId: 'string' }).userId;
+      const subID: any = (request.params as { id: 'string' }).id;
+
+      const subUser = await fastify.db.users.findOne({
+        key: 'id',
+        equals: subID,
+      });
+      const prevUser = await fastify.db.users.findOne({
+        key: 'id',
+        equals: ownID,
+      });
+      if (
+        !prevUser ||
+        !subUser ||
+        !prevUser.subscribedToUserIds.includes(subUser.id)
+      ) {
+        return reply.code(400).send(str('User not found'));
+      }
+      removeIfInclude(prevUser.subscribedToUserIds, subID);
+      const newUser = await fastify.db.users.change(ownID, prevUser);
+      return reply.code(200).send(newUser);
+    }
   );
 
   fastify.patch(
@@ -72,7 +151,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const body: any = request.body;
+      const id: any = (request.params as { id: string }).id;
+      try {
+        const user = await fastify.db.users.change(id, body);
+        return reply.code(200).send(user);
+      } catch (err) {
+        return reply.code(400).send(str('User not found'));
+      }
+    }
   );
 };
 
