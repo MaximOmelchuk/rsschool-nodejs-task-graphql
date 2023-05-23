@@ -2,12 +2,14 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createPostBodySchema, changePostBodySchema } from './schema';
 import type { PostEntity } from '../../utils/DB/entities/DBPosts';
+import { str } from '../../utils/commonUtils';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
 ): Promise<void> => {
   fastify.get('/', async function (request, reply): Promise<PostEntity[]> {
-    return reply.code(200).send([]);
+    const posts = await fastify.db.posts.findMany();
+    return reply.code(200).send(posts);
   });
 
   fastify.get(
@@ -18,7 +20,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      return reply.code(200).send([]);
+      const id = (request.params as { id: string }).id;
+      const post = await fastify.db.posts.findOne({
+        key: 'id',
+        equals: id,
+      });
+      return post
+        ? reply.code(200).send(post)
+        : reply.code(404).send(str('Post not found'));
     }
   );
 
@@ -30,7 +39,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      return reply.code(200).send([]);
+      const body: any = request.body;
+
+      const created = await fastify.db.posts.create(body);
+      return reply.code(200).send(created);
     }
   );
 
@@ -42,7 +54,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      return reply.code(200).send([]);
+      const id = (request.params as { id: string }).id;
+
+      try {
+        await fastify.db.posts.delete(id);
+
+        return reply.code(200).send(str('Post deleted'));
+      } catch (err) {
+        return reply.code(400).send(str('Post not found'));
+      }
     }
   );
 
@@ -55,7 +75,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      return reply.code(200).send([]);
+      const body: any = request.body;
+      const id: any = (request.params as { id: string }).id;
+      try {
+        const post = await fastify.db.posts.change(id, body);
+        return reply.code(200).send(post);
+      } catch (err) {
+        return reply.code(400).send(str('Post not found'));
+      }
     }
   );
 };

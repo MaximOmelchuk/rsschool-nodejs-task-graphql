@@ -76,7 +76,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         });
         (await fastify.db.profiles.findMany()).forEach(async (profile) => {
           if (profile.userId === id) {
-            await fastify.db.posts.delete(profile.id);
+            await fastify.db.profiles.delete(profile.id);
           }
         });
         return reply.code(200).send(str('User deleted'));
