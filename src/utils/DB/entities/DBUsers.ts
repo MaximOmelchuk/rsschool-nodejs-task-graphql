@@ -27,7 +27,7 @@ export type UserEntityWithProfile = {
   lastName: string;
   email: string;
   subscribedToUserIds: string[];
-  profile?: ProfileEntity | null;
+  userSubscribedTo?: ProfileEntity[];
 };
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
 type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;

@@ -1,3 +1,4 @@
+import { ProfileEntity } from './../../utils/DB/entities/DBProfiles';
 import { FastifyInstance } from 'fastify';
 import {
   UserEntityWithExtraData,
@@ -90,10 +91,18 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         const users = await fastify.db.users.findMany();
         const extraUsers = users.map(async (user) => {
           const extraUser: UserEntityWithProfile = { ...user };
-          extraUser.profile = await fastify.db.profiles.findOne({
-            key: 'userId',
-            equals: user.id,
+          const userSubscribedToPromise: ProfileEntity[] = [];
+          user.subscribedToUserIds.forEach(async (id) => {
+            const profile = await fastify.db.profiles.findOne({
+              key: 'userId',
+              equals: id,
+            });
+            if (profile) {
+              userSubscribedToPromise.push(profile);
+            }
           });
+          const userSubscribedTo = await Promise.all(userSubscribedToPromise);
+          extraUser.userSubscribedTo = userSubscribedTo;
           return extraUser;
         });
         const result = await Promise.all(extraUsers);

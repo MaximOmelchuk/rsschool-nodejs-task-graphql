@@ -79,7 +79,7 @@ type UserEntityWithProfile {
   lastName: String
   email: String
   subscribedToUserIds: [String]
-  profile: ProfileEntity
+  profile: [ProfileEntity]
 }
 type Query {
   getAllUsers: [UserEntity]
