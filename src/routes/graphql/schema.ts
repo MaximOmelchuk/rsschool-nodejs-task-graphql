@@ -81,6 +81,14 @@ type UserEntityWithProfile {
   subscribedToUserIds: [String]
   profile: [ProfileEntity]
 }
+type UserEntityWithPosts {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  subscribedToUserIds: [String]
+  userSubscribedTo: [PostEntity]
+}
 type Query {
   getAllUsers: [UserEntity]
   getAllProfiles: [ProfileEntity]
@@ -93,5 +101,6 @@ type Query {
   getAllUsersWithExtraData: [UserEntityWithExtraData]
   getUserByIdWithExtraData: UserEntityWithExtraData
   getAllUsersWithProfile: [UserEntityWithProfile]
+  getUserByIdWithPosts(id: String): [UserEntityWithPosts]
 }
 `;

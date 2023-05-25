@@ -1,7 +1,9 @@
+import { PostEntity } from './../../utils/DB/entities/DBPosts';
 import { ProfileEntity } from './../../utils/DB/entities/DBProfiles';
 import { FastifyInstance } from 'fastify';
 import {
   UserEntityWithExtraData,
+  UserEntityWithPosts,
   UserEntityWithProfile,
 } from '../../utils/DB/entities/DBUsers';
 
@@ -107,6 +109,24 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         });
         const result = await Promise.all(extraUsers);
         return result;
+      },
+      getUserByIdWithPosts: async () => {
+        const user = await fastify.db.users.findOne({
+          key: 'id',
+          equals: variables.id || '',
+        });
+        if (!user) return null;
+        const extraUser: UserEntityWithPosts = { ...user };
+        const subscribedToUser: PostEntity[] = [];
+        user.subscribedToUserIds.forEach(async (id) => {
+          const posts: PostEntity[] = await fastify.db.posts.findMany({
+            key: 'userId',
+            equals: id,
+          });
+          subscribedToUser.push(...posts);
+        });
+        extraUser.subscribedToUser = subscribedToUser;
+        return extraUser;
       },
     },
   };
