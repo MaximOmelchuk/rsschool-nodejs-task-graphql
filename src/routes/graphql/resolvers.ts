@@ -61,6 +61,27 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         await Promise.all(extraUsers);
         return users;
       },
+      getUserByIdWithExtraData: async () => {
+        const user = await fastify.db.users.findOne({
+          key: 'id',
+          equals: variables.id || '',
+        });
+        if (!user) return null;
+        const extraUser: UserEntityWithExtraData = { ...user };
+        extraUser.posts = await fastify.db.posts.findMany({
+          key: 'userId',
+          equals: user.id,
+        });
+        extraUser.profile = await fastify.db.profiles.findOne({
+          key: 'userId',
+          equals: user.id,
+        });
+        extraUser.memberTypes = await fastify.db.memberTypes.findMany({
+          key: 'id',
+          equals: extraUser.profile?.memberTypeId || '',
+        });
+        return extraUser;
+      },
     },
   };
 };

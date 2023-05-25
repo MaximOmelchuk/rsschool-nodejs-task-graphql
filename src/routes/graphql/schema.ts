@@ -63,6 +63,16 @@ type MemberTypeEntity {
   discount: Int
   monthPostsLimit: Int
 }
+type UserEntityWithExtraData {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  subscribedToUserIds: [String]
+  posts: [PostEntity]
+  profile: ProfileEntity
+  memberTypes: [MemberTypeEntity]
+}
 type Query {
   getAllUsers: [UserEntity]
   getAllProfiles: [ProfileEntity]
@@ -72,6 +82,7 @@ type Query {
   getProfileById(id: String): ProfileEntity
   getPostById(id: String): PostEntity
   geMemberTypeById(id: String): MemberTypeEntity
-  getAllUsersWithExtraData: [UserEntity]
+  getAllUsersWithExtraData: [UserEntityWithExtraData]
+  getUserByIdWithExtraData: UserEntityWithExtraData
 }
 `;
