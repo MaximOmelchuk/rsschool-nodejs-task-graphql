@@ -1,5 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { UserEntityWithExtraData } from '../../utils/DB/entities/DBUsers';
+import {
+  UserEntityWithExtraData,
+  UserEntityWithProfile,
+} from '../../utils/DB/entities/DBUsers';
 
 const getResolvers = (fastify: FastifyInstance, variables: any) => {
   return {
@@ -58,9 +61,10 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
           });
           return extraUser;
         });
-        await Promise.all(extraUsers);
-        return users;
+        const result = await Promise.all(extraUsers);
+        return result;
       },
+
       getUserByIdWithExtraData: async () => {
         const user = await fastify.db.users.findOne({
           key: 'id',
@@ -81,6 +85,19 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
           equals: extraUser.profile?.memberTypeId || '',
         });
         return extraUser;
+      },
+      getAllUsersWithProfile: async () => {
+        const users = await fastify.db.users.findMany();
+        const extraUsers = users.map(async (user) => {
+          const extraUser: UserEntityWithProfile = { ...user };
+          extraUser.profile = await fastify.db.profiles.findOne({
+            key: 'userId',
+            equals: user.id,
+          });
+          return extraUser;
+        });
+        const result = await Promise.all(extraUsers);
+        return result;
       },
     },
   };

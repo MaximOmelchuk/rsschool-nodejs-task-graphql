@@ -21,6 +21,14 @@ export type UserEntityWithExtraData = {
   profile?: ProfileEntity | null;
   memberTypes?: MemberTypeEntity[];
 };
+export type UserEntityWithProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  profile?: ProfileEntity | null;
+};
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
 type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;
 

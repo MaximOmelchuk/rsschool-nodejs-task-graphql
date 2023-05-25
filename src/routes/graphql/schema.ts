@@ -73,6 +73,14 @@ type UserEntityWithExtraData {
   profile: ProfileEntity
   memberTypes: [MemberTypeEntity]
 }
+type UserEntityWithProfile {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  subscribedToUserIds: [String]
+  profile: ProfileEntity
+}
 type Query {
   getAllUsers: [UserEntity]
   getAllProfiles: [ProfileEntity]
@@ -84,5 +92,6 @@ type Query {
   geMemberTypeById(id: String): MemberTypeEntity
   getAllUsersWithExtraData: [UserEntityWithExtraData]
   getUserByIdWithExtraData: UserEntityWithExtraData
+  getAllUsersWithProfile: [UserEntityWithProfile]
 }
 `;
