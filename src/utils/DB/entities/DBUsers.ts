@@ -1,3 +1,6 @@
+import { PostEntity } from './DBPosts';
+import { MemberTypeEntity } from './DBMemberTypes';
+import { ProfileEntity } from './DBProfiles';
 import * as crypto from 'node:crypto';
 import DBEntity from './DBEntity';
 
@@ -7,6 +10,16 @@ export type UserEntity = {
   lastName: string;
   email: string;
   subscribedToUserIds: string[];
+};
+export type UserEntityWithExtraData = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  posts?: PostEntity[];
+  profile?: ProfileEntity | null;
+  memberTypes?: MemberTypeEntity[];
 };
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
 type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;

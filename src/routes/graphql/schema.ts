@@ -72,5 +72,6 @@ type Query {
   getProfileById(id: String): ProfileEntity
   getPostById(id: String): PostEntity
   geMemberTypeById(id: String): MemberTypeEntity
+  getAllUsersWithExtraData: [UserEntity]
 }
 `;
