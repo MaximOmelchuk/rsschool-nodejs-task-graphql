@@ -37,6 +37,24 @@ export type UserEntityWithPosts = {
   subscribedToUserIds: string[];
   subscribedToUser?: PostEntity[];
 };
+export type UserEntityWithSubscribersChild = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  subscribedToUser?: UserEntity[];
+  userSubscribedTo?: UserEntity[];
+};
+export type UserEntityWithSubscribersParent = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  subscribedToUser?: UserEntityWithSubscribersChild[];
+  userSubscribedTo?: UserEntityWithSubscribersChild[];
+};
 type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
 type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;
 

@@ -89,6 +89,24 @@ type UserEntityWithPosts {
   subscribedToUserIds: [String]
   userSubscribedTo: [PostEntity]
 }
+type UserEntityWithSubscribersChild {
+  id: String
+  firstName: String
+  lastName: String
+  email: String
+  subscribedToUserIds: [String]
+  subscribedToUser: [UserEntity]
+  userSubscribedTo: [UserEntity]
+}
+type UserEntityWithSubscribersParent {
+  id: String
+  firstName: String
+  lastName: String
+  email: String
+  subscribedToUserIds: [String]
+  subscribedToUser: [UserEntityWithSubscribersChild]
+  userSubscribedTo: [UserEntityWithSubscribersChild]
+}
 type Query {
   getAllUsers: [UserEntity]
   getAllProfiles: [ProfileEntity]
@@ -102,5 +120,6 @@ type Query {
   getUserByIdWithExtraData: UserEntityWithExtraData
   getAllUsersWithProfile: [UserEntityWithProfile]
   getUserByIdWithPosts(id: String): [UserEntityWithPosts]
+  getAllUsersWithSubscribersUsers: [UserEntityWithSubscribersParent]
 }
 `;

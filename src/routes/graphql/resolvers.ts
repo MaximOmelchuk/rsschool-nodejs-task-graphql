@@ -1,3 +1,8 @@
+import {
+  UserEntity,
+  UserEntityWithSubscribersChild,
+  UserEntityWithSubscribersParent,
+} from './../../utils/DB/entities/DBUsers';
 import { PostEntity } from './../../utils/DB/entities/DBPosts';
 import { ProfileEntity } from './../../utils/DB/entities/DBProfiles';
 import { FastifyInstance } from 'fastify';
@@ -127,6 +132,49 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         });
         extraUser.subscribedToUser = subscribedToUser;
         return extraUser;
+      },
+      getAllUsersWithSubscribersUsers: async () => {
+        const getUserWithSubscibers = async (
+          id: string,
+          fastify: FastifyInstance,
+          hasSubSubcribers: boolean
+        ) => {
+          const user: UserEntity | null = await fastify.db.users.findOne({
+            key: 'id',
+            equals: id,
+          });
+          if (!user) {
+            return null;
+          }
+          const subsUsers: UserEntityWithSubscribersParent[] = [];
+          const subsIds = user.subscribedToUserIds;
+          subsIds.forEach(async (id) => {
+            const subUser = await getUserWithSubscibers(id, fastify, false);
+            if (subUser) subsUsers.push(subUser);
+          });
+
+          if (hasSubSubcribers) {
+            const extraUser: UserEntityWithSubscribersParent = { ...user };
+            extraUser.subscribedToUser = subsUsers;
+            return extraUser;
+          } else {
+            const extraUser: UserEntityWithSubscribersChild = { ...user };
+            extraUser.subscribedToUser = subsUsers;
+            return extraUser;
+          }
+        };
+
+        const usersIds = (await fastify.db.users.findMany()).map(
+          (item) => item.id
+        );
+        const usersArr: UserEntityWithSubscribersParent[] = [];
+        usersIds.forEach(async (id) => {
+          const user = await getUserWithSubscibers(id, fastify, true);
+          if (user) {
+            usersArr.push(user);
+          }
+        });
+        return usersArr;
       },
     },
   };
