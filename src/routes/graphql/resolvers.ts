@@ -1,4 +1,5 @@
 import {
+  CreateUserDTO,
   UserEntity,
   UserEntityWithSubscribersChild,
   UserEntityWithSubscribersParent,
@@ -176,7 +177,16 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         });
         return usersArr;
       },
+      
     },
+    Mutation: {
+      createUser: async () => {
+        const user: CreateUserDTO = variables.user;
+        const created: UserEntity = await fastify.db.users.create(user);
+        return created;
+      }, 
+    }
+    
   };
 };
 

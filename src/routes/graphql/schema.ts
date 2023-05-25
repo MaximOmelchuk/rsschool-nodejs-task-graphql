@@ -107,12 +107,17 @@ type UserEntityWithSubscribersParent {
   subscribedToUser: [UserEntityWithSubscribersChild]
   userSubscribedTo: [UserEntityWithSubscribersChild]
 }
+input CreateUserDTO {
+  firstName: String
+  lastName: String
+  email: String
+}
 type Query {
   getAllUsers: [UserEntity]
   getAllProfiles: [ProfileEntity]
   getAllPosts: [PostEntity]
   getAllMemberTypes: [MemberTypeEntity]
-  getUserById(id: String): UserEntity
+  getUserById(id: String): UserEntity 
   getProfileById(id: String): ProfileEntity
   getPostById(id: String): PostEntity
   geMemberTypeById(id: String): MemberTypeEntity
@@ -121,5 +126,8 @@ type Query {
   getAllUsersWithProfile: [UserEntityWithProfile]
   getUserByIdWithPosts(id: String): [UserEntityWithPosts]
   getAllUsersWithSubscribersUsers: [UserEntityWithSubscribersParent]
+}
+type Mutation {
+  createUser: UserEntity
 }
 `;
