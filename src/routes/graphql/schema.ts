@@ -135,5 +135,7 @@ type Mutation {
   updateProfile: ProfileEntity
   updatePost: PostEntity
   updateMemberType: MemberTypeEntity
+  subscribeTo: UserEntity
+  unsubscribeFrom: UserEntity
 }
 `;

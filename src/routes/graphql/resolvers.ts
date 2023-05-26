@@ -1,3 +1,4 @@
+import { addIfNotInclude, removeIfInclude } from './../../utils/commonUtils';
 import { MemberTypeEntity } from './../../utils/DB/entities/DBMemberTypes';
 import {
   CreateUserDTO,
@@ -229,6 +230,30 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
           update
         );
         return created;
+      },
+      subscribeTo: async () => {
+        const ownID: string = variables.ownID;
+        const subID: any = variables.subID;
+        const sub: UserEntity | null = await fastify.db.users.findOne({
+          key: 'id',
+          equals: subID,
+        });
+        if (!sub) return null;
+        addIfNotInclude(sub.subscribedToUserIds, ownID);
+        const updated = await fastify.db.users.change(subID, sub);
+        return updated;
+      },
+      unsubscribeFrom: async () => {
+        const ownID: string = variables.ownID;
+        const subID: any = variables.subID;
+        const own: UserEntity | null = await fastify.db.users.findOne({
+          key: 'id',
+          equals: ownID,
+        });
+        if (!own) return null;
+        removeIfInclude(own.subscribedToUserIds, subID);
+        const updated = await fastify.db.users.change(ownID, own);
+        return updated;
       },
     },
   };
