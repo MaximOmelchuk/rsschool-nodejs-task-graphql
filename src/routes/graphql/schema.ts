@@ -131,5 +131,9 @@ type Mutation {
   createUser: UserEntity
   createProfile: ProfileEntity
   createPost: PostEntity
+  updateUser: UserEntity
+  updateProfile: ProfileEntity
+  updatePost: PostEntity
+  updateMemberType: MemberTypeEntity
 }
 `;

@@ -1,3 +1,4 @@
+import { MemberTypeEntity } from './../../utils/DB/entities/DBMemberTypes';
 import {
   CreateUserDTO,
   UserEntity,
@@ -197,6 +198,36 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
       createPost: async () => {
         const post: CreatePostDTO = variables.post;
         const created: PostEntity = await fastify.db.posts.create(post);
+        return created;
+      },
+      updateUser: async () => {
+        const id: string = variables.id;
+        const update: any = variables.update;
+        const created: UserEntity = await fastify.db.users.change(id, update);
+        return created;
+      },
+      updateProfile: async () => {
+        const id: string = variables.id;
+        const update: any = variables.update;
+        const created: ProfileEntity = await fastify.db.profiles.change(
+          id,
+          update
+        );
+        return created;
+      },
+      updatePost: async () => {
+        const id: string = variables.id;
+        const update: any = variables.update;
+        const created: PostEntity = await fastify.db.posts.change(id, update);
+        return created;
+      },
+      updateMemberType: async () => {
+        const id: string = variables.id;
+        const update: any = variables.update;
+        const created: MemberTypeEntity = await fastify.db.memberTypes.change(
+          id,
+          update
+        );
         return created;
       },
     },
