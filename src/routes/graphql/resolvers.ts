@@ -4,7 +4,7 @@ import {
   UserEntityWithSubscribersChild,
   UserEntityWithSubscribersParent,
 } from './../../utils/DB/entities/DBUsers';
-import { PostEntity } from './../../utils/DB/entities/DBPosts';
+import { PostEntity, CreatePostDTO } from './../../utils/DB/entities/DBPosts';
 import {
   ProfileEntity,
   CreateProfileDTO,
@@ -192,6 +192,11 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         const created: ProfileEntity = await fastify.db.profiles.create(
           profile
         );
+        return created;
+      },
+      createPost: async () => {
+        const post: CreatePostDTO = variables.post;
+        const created: PostEntity = await fastify.db.posts.create(post);
         return created;
       },
     },
