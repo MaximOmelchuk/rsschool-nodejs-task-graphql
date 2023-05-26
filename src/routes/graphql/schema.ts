@@ -129,5 +129,6 @@ type Query {
 }
 type Mutation {
   createUser: UserEntity
+  createProfile: ProfileEntity
 }
 `;

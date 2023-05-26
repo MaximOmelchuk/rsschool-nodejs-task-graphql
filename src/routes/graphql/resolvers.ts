@@ -5,7 +5,10 @@ import {
   UserEntityWithSubscribersParent,
 } from './../../utils/DB/entities/DBUsers';
 import { PostEntity } from './../../utils/DB/entities/DBPosts';
-import { ProfileEntity } from './../../utils/DB/entities/DBProfiles';
+import {
+  ProfileEntity,
+  CreateProfileDTO,
+} from './../../utils/DB/entities/DBProfiles';
 import { FastifyInstance } from 'fastify';
 import {
   UserEntityWithExtraData,
@@ -177,16 +180,21 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         });
         return usersArr;
       },
-      
     },
     Mutation: {
       createUser: async () => {
         const user: CreateUserDTO = variables.user;
         const created: UserEntity = await fastify.db.users.create(user);
         return created;
-      }, 
-    }
-    
+      },
+      createProfile: async () => {
+        const profile: CreateProfileDTO = variables.profile;
+        const created: ProfileEntity = await fastify.db.profiles.create(
+          profile
+        );
+        return created;
+      },
+    },
   };
 };
 
