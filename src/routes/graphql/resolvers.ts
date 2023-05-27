@@ -18,7 +18,7 @@ import {
   UserEntityWithProfile,
 } from '../../utils/DB/entities/DBUsers';
 
-const getResolvers = (fastify: FastifyInstance, variables: any) => {
+const getResolvers = (fastify: FastifyInstance) => {
   return {
     Query: {
       getAllUsers: async () => {
@@ -33,56 +33,62 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
       getAllMemberTypes: async () => {
         return await fastify.db.memberTypes.findMany();
       },
-      getUserById: async (id: string) => {
+      getUserById: async (_: unknown, context: any) => {
         return await fastify.db.users.findOne({
           key: 'id',
-          equals: variables?.id,
+          equals: context.id,
         });
       },
-      getProfileById: async (id: string) => {
+      getProfileById: async (_: unknown, context: any) => {
         return await fastify.db.profiles.findOne({
           key: 'id',
-          equals: variables?.id,
+          equals: context?.id,
         });
       },
-      getPostById: async (id: string) => {
+      getPostById: async (_: unknown, context: any) => {
         return await fastify.db.posts.findOne({
           key: 'id',
-          equals: variables?.id,
+          equals: context?.id,
         });
       },
-      geMemberTypeById: async (id: string) => {
+      geMemberTypeById: async (_: unknown, context: any) => {
         return await fastify.db.memberTypes.findOne({
           key: 'id',
-          equals: variables?.id,
+          equals: context?.id,
         });
       },
       getAllUsersWithExtraData: async () => {
         const users = await fastify.db.users.findMany();
-        const extraUsers = users.map(async (user) => {
-          const extraUser: UserEntityWithExtraData = { ...user };
-          extraUser.posts = await fastify.db.posts.findMany({
-            key: 'userId',
-            equals: user.id,
-          });
-          extraUser.profile = await fastify.db.profiles.findOne({
-            key: 'userId',
-            equals: user.id,
-          });
-          extraUser.memberTypes = await fastify.db.memberTypes.findMany({
-            key: 'id',
-            equals: extraUser.profile?.memberTypeId || '',
-          });
-          return extraUser;
-        });
-        const result = await Promise.all(extraUsers);
-        return result;
+
+        // const batchFunction = async () => {
+        //   const extraUsers = users.map(async (user) => {
+        //     const extraUser: UserEntityWithExtraData = { ...user };
+        //     extraUser.posts = await fastify.db.posts.findMany({
+        //       key: 'userId',
+        //       equals: user.id,
+        //     });
+        //     extraUser.profile = await fastify.db.profiles.findOne({
+        //       key: 'userId',
+        //       equals: user.id,
+        //     });
+        //     extraUser.memberTypes = await fastify.db.memberTypes.findMany({
+        //       key: 'id',
+        //       equals: extraUser.profile?.memberTypeId || '',
+        //     });
+        //     return extraUser;
+        //   });
+        //   const result = await Promise.all(extraUsers);
+        //   return result;
+        // }
+
+        // const loader = new DataLoader(batchFunction)
+        return users;
       },
 
-      getUserByIdWithExtraData: async () => {
+      getUserByIdWithExtraData: async (_: unknown, context: any) => {
         const user = await fastify.db.users.findOne({
           key: 'id',
-          equals: variables.id || '',
+          equals: context.id || '',
         });
         if (!user) return null;
         const extraUser: UserEntityWithExtraData = { ...user };
@@ -121,10 +127,10 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         const result = await Promise.all(extraUsers);
         return result;
       },
-      getUserByIdWithPosts: async () => {
+      getUserByIdWithPosts: async (_: unknown, context: any) => {
         const user = await fastify.db.users.findOne({
           key: 'id',
-          equals: variables.id || '',
+          equals: context.id || '',
         });
         if (!user) return null;
         const extraUser: UserEntityWithPosts = { ...user };
@@ -184,56 +190,57 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
       },
     },
     Mutation: {
-      createUser: async () => {
-        const user: CreateUserDTO = variables.user;
+      createUser: async (_: unknown, context: any) => {
+        const user: CreateUserDTO = context.user;
+        console.log('-----context.user', context.user)
         const created: UserEntity = await fastify.db.users.create(user);
         return created;
       },
-      createProfile: async () => {
-        const profile: CreateProfileDTO = variables.profile;
+      createProfile: async (_: unknown, context: any) => {
+        const profile: CreateProfileDTO = context.profile;
         const created: ProfileEntity = await fastify.db.profiles.create(
           profile
         );
         return created;
       },
-      createPost: async () => {
-        const post: CreatePostDTO = variables.post;
+      createPost: async (_: unknown, context: any) => {
+        const post: CreatePostDTO = context.post;
         const created: PostEntity = await fastify.db.posts.create(post);
         return created;
       },
-      updateUser: async () => {
-        const id: string = variables.id;
-        const update: any = variables.update;
+      updateUser: async (_: unknown, context: any) => {
+        const id: string = context.id;
+        const update: any = context.update;
         const created: UserEntity = await fastify.db.users.change(id, update);
         return created;
       },
-      updateProfile: async () => {
-        const id: string = variables.id;
-        const update: any = variables.update;
+      updateProfile: async (_: unknown, context: any) => {
+        const id: string = context.id;
+        const update: any = context.update;
         const created: ProfileEntity = await fastify.db.profiles.change(
           id,
           update
         );
         return created;
       },
-      updatePost: async () => {
-        const id: string = variables.id;
-        const update: any = variables.update;
+      updatePost: async (_: unknown, context: any) => {
+        const id: string = context.id;
+        const update: any = context.update;
         const created: PostEntity = await fastify.db.posts.change(id, update);
         return created;
       },
-      updateMemberType: async () => {
-        const id: string = variables.id;
-        const update: any = variables.update;
+      updateMemberType: async (_: unknown, context: any) => {
+        const id: string = context.id;
+        const update: any = context.update;
         const created: MemberTypeEntity = await fastify.db.memberTypes.change(
           id,
           update
         );
         return created;
       },
-      subscribeTo: async () => {
-        const ownID: string = variables.ownID;
-        const subID: any = variables.subID;
+      subscribeTo: async (_: unknown, context: any) => {
+        const ownID: string = context.ownID;
+        const subID: any = context.subID;
         const sub: UserEntity | null = await fastify.db.users.findOne({
           key: 'id',
           equals: subID,
@@ -243,9 +250,9 @@ const getResolvers = (fastify: FastifyInstance, variables: any) => {
         const updated = await fastify.db.users.change(subID, sub);
         return updated;
       },
-      unsubscribeFrom: async () => {
-        const ownID: string = variables.ownID;
-        const subID: any = variables.subID;
+      unsubscribeFrom: async (_: unknown, context: any) => {
+        const ownID: string = context.ownID;
+        const subID: any = context.subID;
         const own: UserEntity | null = await fastify.db.users.findOne({
           key: 'id',
           equals: ownID,

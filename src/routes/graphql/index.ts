@@ -7,6 +7,11 @@ import getResolvers from './resolvers';
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
 ): Promise<void> => {
+  const appgql = await Fastify();
+  await appgql.register(mercurius, {
+    schema: graphqlSchema,
+    resolvers: getResolvers(fastify),
+  });
   fastify.post(
     '/',
     {
@@ -18,12 +23,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const query = (request.body as any)?.query;
       const variables = (request.body as any)?.variables;
 
-      const appgql = await Fastify();
-      await appgql.register(mercurius, {
-        schema: graphqlSchema,
-        resolvers: getResolvers(fastify, variables),
-      });
-      return await appgql.graphql(query, undefined, variables)
+      return await appgql.graphql(query, undefined, variables);
       // return await appgql.graphql(query);
     }
   );
