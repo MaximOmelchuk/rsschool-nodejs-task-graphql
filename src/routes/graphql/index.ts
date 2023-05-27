@@ -15,7 +15,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply) {
-      fastify;
       const query = (request.body as any)?.query;
       const variables = (request.body as any)?.variables;
 
@@ -24,7 +23,8 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         schema: graphqlSchema,
         resolvers: getResolvers(fastify, variables),
       });
-      return await appgql.graphql(query);
+      return await appgql.graphql(query, undefined, variables)
+      // return await appgql.graphql(query);
     }
   );
 };

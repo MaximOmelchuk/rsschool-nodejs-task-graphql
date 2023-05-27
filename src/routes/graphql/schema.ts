@@ -108,9 +108,49 @@ type UserEntityWithSubscribersParent {
   userSubscribedTo: [UserEntityWithSubscribersChild]
 }
 input CreateUserDTO {
+  firstName: String!
+  lastName: String!
+  email: String!
+}
+input CreateProfileDTO {
+  userId: String
+  avatar: String
+  sex: String
+  birthday: Int
+  country: String
+  street: String
+  city: String
+  memberTypeId: String
+}
+input CreatePostDTO {
+  userId: String
+  title: String
+  content: String
+}
+input UserUpdateDTO {
   firstName: String
   lastName: String
   email: String
+  subscribedToUserIds: [String]
+}
+input ProfileUpdateDTO {
+  avatar: String
+  sex: String
+  birthday: Int
+  country: String
+  street: String
+  city: String
+  memberTypeId: String
+  userId: String
+}
+input PostUpdateDTO {
+  title: String
+  content: String
+  userId: String
+}
+input MemberTypeUpdateDTO {
+  discount: Int
+  monthPostsLimit: Int
 }
 type Query {
   getAllUsers: [UserEntity]
@@ -128,14 +168,14 @@ type Query {
   getAllUsersWithSubscribersUsers: [UserEntityWithSubscribersParent]
 }
 type Mutation {
-  createUser: UserEntity
-  createProfile: ProfileEntity
-  createPost: PostEntity
-  updateUser: UserEntity
-  updateProfile: ProfileEntity
-  updatePost: PostEntity
-  updateMemberType: MemberTypeEntity
-  subscribeTo: UserEntity
-  unsubscribeFrom: UserEntity
+  createUser(user: CreateUserDTO): UserEntity
+  createProfile(profile: CreateProfileDTO): ProfileEntity
+  createPost(post: CreatePostDTO): PostEntity
+  updateUser(id: String, update: UserUpdateDTO): UserEntity
+  updateProfile(id: String, update: ProfileUpdateDTO): ProfileEntity
+  updatePost(id: String, update: PostUpdateDTO): PostEntity
+  updateMemberType(id: String, update: MemberTypeUpdateDTO): MemberTypeEntity
+  subscribeTo(ownID: String, subID: String): UserEntity
+  unsubscribeFrom(ownID: String, subID: String): UserEntity
 }
 `;
