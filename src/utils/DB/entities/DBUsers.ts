@@ -1,3 +1,6 @@
+import { PostEntity } from './DBPosts';
+import { MemberTypeEntity } from './DBMemberTypes';
+import { ProfileEntity } from './DBProfiles';
 import * as crypto from 'node:crypto';
 import DBEntity from './DBEntity';
 
@@ -8,7 +11,51 @@ export type UserEntity = {
   email: string;
   subscribedToUserIds: string[];
 };
-type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
+export type UserEntityWithExtraData = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  posts?: PostEntity[];
+  profile?: ProfileEntity | null;
+  memberTypes?: MemberTypeEntity | null;
+};
+export type UserEntityWithProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  userSubscribedTo?: (ProfileEntity | undefined)[] | undefined;
+};
+export type UserEntityWithPosts = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  subscribedToUser?: (PostEntity | undefined)[];
+};
+export type UserEntityWithSubscribersChild = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  subscribedToUser?: UserEntity[];
+  userSubscribedTo?: UserEntity[];
+};
+export type UserEntityWithSubscribersParent = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribedToUserIds: string[];
+  subscribedToUser?: UserEntityWithSubscribersChild[];
+  userSubscribedTo?: UserEntityWithSubscribersChild[];
+};
+export type CreateUserDTO = Omit<UserEntity, 'id' | 'subscribedToUserIds'>;
 type ChangeUserDTO = Partial<Omit<UserEntity, 'id'>>;
 
 export default class DBUsers extends DBEntity<

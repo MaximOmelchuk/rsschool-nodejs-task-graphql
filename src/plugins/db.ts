@@ -11,3 +11,5 @@ declare module 'fastify' {
     db: DB;
   }
 }
+
+// export const fastifyType = typeof FastifyInstance
