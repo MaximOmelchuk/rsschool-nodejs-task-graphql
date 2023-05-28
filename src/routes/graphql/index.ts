@@ -11,6 +11,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   await appgql.register(mercurius, {
     schema: graphqlSchema,
     resolvers: getResolvers(fastify),
+    queryDepth: 6,
   });
   fastify.post(
     '/',
