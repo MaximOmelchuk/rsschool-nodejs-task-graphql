@@ -17,21 +17,54 @@ import {
   UserEntityWithPosts,
   UserEntityWithProfile,
 } from '../../utils/DB/entities/DBUsers';
+import DataLoader = require('dataloader');
 
 const getResolvers = (fastify: FastifyInstance) => {
+  const usersDL = new DataLoader(async function (keys) {
+    const allUsers = await fastify.db.users.findMany();
+    if (!keys.length) return allUsers;
+    return keys?.map((id) => allUsers.find((user) => user.id === id));
+  });
+  const profilesDLUsersID = new DataLoader(async function (keys) {
+    const allProfiles = await fastify.db.profiles.findMany();
+    if (!keys.length) return allProfiles;
+    return keys?.map((id) =>
+      allProfiles.find((profile) => profile.userId === id)
+    );
+  });
+  const postsDLUsersID = new DataLoader(async function (keys) {
+    const allPosts = await fastify.db.posts.findMany();
+    if (!keys.length) return [allPosts];
+    const results = keys?.map((id) =>
+      allPosts.filter((posts) => posts.userId === id)
+    );
+    return results;
+  });
+  const memberTypesDL = new DataLoader(async function (keys) {
+    const allTypes = await fastify.db.memberTypes.findMany();
+    if (!keys.length) return allTypes;
+    return keys?.map((id) => allTypes.find((type) => type.id === id));
+  });
+  const subscribersDL = new DataLoader(async function (keys) {
+    const allUsers = await fastify.db.users.findMany();
+    return keys?.map((id) =>
+      allUsers.filter((user) => user.subscribedToUserIds.includes(id as string))
+    );
+  });
+
   return {
     Query: {
       getAllUsers: async () => {
-        return await fastify.db.users.findMany();
+        return await usersDL.loadMany([]);
       },
       getAllProfiles: async () => {
-        return await fastify.db.profiles.findMany();
+        return await profilesDLUsersID.loadMany([]);
       },
       getAllPosts: async () => {
-        return await fastify.db.posts.findMany();
+        return await postsDLUsersID.loadMany([]);
       },
       getAllMemberTypes: async () => {
-        return await fastify.db.memberTypes.findMany();
+        return await memberTypesDL.loadMany([]);
       },
       getUserById: async (_: unknown, context: any) => {
         return await fastify.db.users.findOne({
@@ -58,141 +91,180 @@ const getResolvers = (fastify: FastifyInstance) => {
         });
       },
       getAllUsersWithExtraData: async () => {
-        const users = await fastify.db.users.findMany();
-
-        // const batchFunction = async () => {
-        //   const extraUsers = users.map(async (user) => {
-        //     const extraUser: UserEntityWithExtraData = { ...user };
-        //     extraUser.posts = await fastify.db.posts.findMany({
-        //       key: 'userId',
-        //       equals: user.id,
-        //     });
-        //     extraUser.profile = await fastify.db.profiles.findOne({
-        //       key: 'userId',
-        //       equals: user.id,
-        //     });
-        //     extraUser.memberTypes = await fastify.db.memberTypes.findMany({
-        //       key: 'id',
-        //       equals: extraUser.profile?.memberTypeId || '',
-        //     });
-        //     return extraUser;
-        //   });
-        //   const result = await Promise.all(extraUsers);
-        //   return result;
-        // }
-
-        // const loader = new DataLoader(batchFunction)
-        return users;
+        const users: UserEntity[] = [];
+        (await usersDL.loadMany([])).forEach((user) => {
+          if (user && 'id' in user) users.push(user);
+        });
+        const usersIDs = users.map((user) => user.id);
+        const profiles = (await profilesDLUsersID.loadMany(usersIDs)).map(
+          (item) => (item && 'id' in item ? item : undefined)
+        );
+        const posts = (await postsDLUsersID.loadMany(usersIDs)).map((item) =>
+          Array.isArray(item) ? item : []
+        );
+        const typesIDs = profiles.map((item) =>
+          item && 'id' in item ? item?.memberTypeId : undefined
+        );
+        const types = (await memberTypesDL.loadMany(typesIDs)).map((item) =>
+          item && 'id' in item ? item : undefined
+        );
+        const result: UserEntityWithExtraData[] = [...users];
+        result.forEach((_, index) => {
+          result[index].posts = posts[index];
+          result[index].profile = profiles[index];
+          result[index].memberTypes = types[index];
+        });
+        return result;
       },
 
       getUserByIdWithExtraData: async (_: unknown, context: any) => {
+        const userID: string = context.id;
         const user = await fastify.db.users.findOne({
           key: 'id',
-          equals: context.id || '',
+          equals: userID,
         });
         if (!user) return null;
-        const extraUser: UserEntityWithExtraData = { ...user };
-        extraUser.posts = await fastify.db.posts.findMany({
-          key: 'userId',
-          equals: user.id,
+        const profile = await profilesDLUsersID.load(userID);
+        const posts: PostEntity[] = [];
+        (await postsDLUsersID.loadMany([userID])).forEach((post) => {
+          if (Array.isArray(post)) {
+            posts.concat(...post);
+          }
         });
-        extraUser.profile = await fastify.db.profiles.findOne({
-          key: 'userId',
-          equals: user.id,
-        });
-        extraUser.memberTypes = await fastify.db.memberTypes.findMany({
-          key: 'id',
-          equals: extraUser.profile?.memberTypeId || '',
-        });
-        return extraUser;
-      },
-      getAllUsersWithProfile: async () => {
-        const users = await fastify.db.users.findMany();
-        const extraUsers = users.map(async (user) => {
-          const extraUser: UserEntityWithProfile = { ...user };
-          const userSubscribedToPromise: ProfileEntity[] = [];
-          user.subscribedToUserIds.forEach(async (id) => {
-            const profile = await fastify.db.profiles.findOne({
-              key: 'userId',
-              equals: id,
-            });
-            if (profile) {
-              userSubscribedToPromise.push(profile);
-            }
-          });
-          const userSubscribedTo = await Promise.all(userSubscribedToPromise);
-          extraUser.userSubscribedTo = userSubscribedTo;
-          return extraUser;
-        });
-        const result = await Promise.all(extraUsers);
+        const typeID = profile?.memberTypeId;
+        const type = typeID ? await memberTypesDL.load(typeID) : undefined;
+        const result: UserEntityWithExtraData = { ...user };
+        result.posts = posts;
+        result.profile = profile;
+        result.memberTypes = type;
         return result;
       },
-      getUserByIdWithPosts: async (_: unknown, context: any) => {
-        const user = await fastify.db.users.findOne({
-          key: 'id',
-          equals: context.id || '',
-        });
-        if (!user) return null;
-        const extraUser: UserEntityWithPosts = { ...user };
-        const subscribedToUser: PostEntity[] = [];
-        user.subscribedToUserIds.forEach(async (id) => {
-          const posts: PostEntity[] = await fastify.db.posts.findMany({
-            key: 'userId',
-            equals: id,
-          });
-          subscribedToUser.push(...posts);
-        });
-        extraUser.subscribedToUser = subscribedToUser;
-        return extraUser;
-      },
-      getAllUsersWithSubscribersUsers: async () => {
-        const getUserWithSubscibers = async (
-          id: string,
-          fastify: FastifyInstance,
-          hasSubSubcribers: boolean
-        ) => {
-          const user: UserEntity | null = await fastify.db.users.findOne({
-            key: 'id',
-            equals: id,
-          });
-          if (!user) {
-            return null;
-          }
-          const subsUsers: UserEntityWithSubscribersParent[] = [];
-          const subsIds = user.subscribedToUserIds;
-          subsIds.forEach(async (id) => {
-            const subUser = await getUserWithSubscibers(id, fastify, false);
-            if (subUser) subsUsers.push(subUser);
-          });
 
-          if (hasSubSubcribers) {
-            const extraUser: UserEntityWithSubscribersParent = { ...user };
-            extraUser.subscribedToUser = subsUsers;
-            return extraUser;
+      getAllUsersWithProfile: async () => {
+        const users: UserEntity[] = [];
+        (await usersDL.loadMany([])).forEach((user) => {
+          if (user && 'id' in user) users.push(user);
+        });
+        const usersIDs = users.map((item) => item.id);
+        const subs = (await subscribersDL.loadMany(usersIDs)).map((item) =>
+          Array.isArray(item) ? item : undefined
+        );
+        const subsProfilesPromise = subs.map((users) => {
+          if (Array.isArray(users)) {
+            return Promise.all(
+              users.map((sub) => {
+                return profilesDLUsersID.load(sub.id);
+              })
+            );
           } else {
-            const extraUser: UserEntityWithSubscribersChild = { ...user };
-            extraUser.subscribedToUser = subsUsers;
-            return extraUser;
+            return undefined;
+          }
+        });
+        const subsProfiles = await Promise.all(subsProfilesPromise);
+        const result: UserEntityWithProfile[] = [...users];
+        result.forEach(async (_, index) => {
+          result[index].userSubscribedTo = subsProfiles[index];
+        });
+        return result;
+      },
+
+      getUserByIdWithPosts: async (_: unknown, context: any) => {
+        const id: string = context.id;
+        const user = await usersDL.load(id);
+        if (!user) return null;
+        const subsIDs = user.subscribedToUserIds;
+        const subsProfiles = (await postsDLUsersID.loadMany(subsIDs)).map(
+          (item) => (Array.isArray(item) ? item : [])
+        );
+        const result: UserEntityWithPosts = { ...user };
+        result.subscribedToUser = subsProfiles.flat();
+        return result;
+      },
+
+      getAllUsersWithSubscribersUsers: async () => {
+        const allUsers: UserEntity[] = [];
+        (await usersDL.loadMany([])).forEach((user) => {
+          if (user && 'id' in user) allUsers.push(user);
+        });
+        const addSubs = async (users: UserEntity[], subsHasSubs: Boolean) => {
+          if (subsHasSubs) {
+            const extraUsers: UserEntityWithSubscribersParent[] =
+              await Promise.all(
+                [...users].map(async (user, index) => {
+                  const extraUser: UserEntityWithSubscribersParent = {
+                    ...user,
+                  };
+                  const subToMe = (
+                    await usersDL.loadMany(user.subscribedToUserIds)
+                  ).map((user) => (user && 'id' in user ? user : undefined));
+                  const clearSubToMe: UserEntity[] = [];
+                  subToMe.forEach((item) => {
+                    if (!!item) {
+                      clearSubToMe.push(item);
+                    }
+                  });
+
+                  const meSubTo: UserEntity[] = [];
+                  allUsers.forEach((item) => {
+                    if (item.subscribedToUserIds.includes(user.id)) {
+                      meSubTo.push(item);
+                    }
+                  });
+
+                  extraUser.subscribedToUser = await addSubs(
+                    clearSubToMe,
+                    false
+                  );
+                  extraUser.userSubscribedTo = await addSubs(meSubTo, false);
+                  return extraUser;
+                })
+              );
+
+            const res = await Promise.all(extraUsers);
+            return res;
+          } else {
+            const extraUsers: UserEntityWithSubscribersChild[] =
+              await Promise.all(
+                [...users].map(async (user, index) => {
+                  const extraUser: UserEntityWithSubscribersParent = {
+                    ...user,
+                  };
+                  const subToMe = (
+                    await usersDL.loadMany(user.subscribedToUserIds)
+                  ).map((user) => (user && 'id' in user ? user : undefined));
+                  const clearSubToMe: UserEntity[] = [];
+                  subToMe.forEach((item) => {
+                    if (!!item) {
+                      clearSubToMe.push(item);
+                    }
+                  });
+
+                  const meSubTo: UserEntity[] = [];
+                  allUsers.forEach((item) => {
+                    if (item.subscribedToUserIds.includes(user.id)) {
+                      meSubTo.push(item);
+                    }
+                  });
+
+                  extraUser.subscribedToUser = clearSubToMe;
+                  extraUser.userSubscribedTo = meSubTo;
+                  return extraUser;
+                })
+              );
+
+            const res = await Promise.all(extraUsers);
+            return res;
           }
         };
 
-        const usersIds = (await fastify.db.users.findMany()).map(
-          (item) => item.id
-        );
-        const usersArr: UserEntityWithSubscribersParent[] = [];
-        usersIds.forEach(async (id) => {
-          const user = await getUserWithSubscibers(id, fastify, true);
-          if (user) {
-            usersArr.push(user);
-          }
-        });
-        return usersArr;
+        const res = await addSubs(allUsers, true);
+        return res;
       },
     },
     Mutation: {
       createUser: async (_: unknown, context: any) => {
         const user: CreateUserDTO = context.user;
-        console.log('-----context.user', context.user)
+        console.log('-----context.user', context.user);
         const created: UserEntity = await fastify.db.users.create(user);
         return created;
       },
@@ -241,10 +313,7 @@ const getResolvers = (fastify: FastifyInstance) => {
       subscribeTo: async (_: unknown, context: any) => {
         const ownID: string = context.ownID;
         const subID: any = context.subID;
-        const sub: UserEntity | null = await fastify.db.users.findOne({
-          key: 'id',
-          equals: subID,
-        });
+        const sub: UserEntity | undefined = await usersDL.load(subID);
         if (!sub) return null;
         addIfNotInclude(sub.subscribedToUserIds, ownID);
         const updated = await fastify.db.users.change(subID, sub);
@@ -253,10 +322,7 @@ const getResolvers = (fastify: FastifyInstance) => {
       unsubscribeFrom: async (_: unknown, context: any) => {
         const ownID: string = context.ownID;
         const subID: any = context.subID;
-        const own: UserEntity | null = await fastify.db.users.findOne({
-          key: 'id',
-          equals: ownID,
-        });
+        const own: UserEntity | undefined = await usersDL.load(ownID);
         if (!own) return null;
         removeIfInclude(own.subscribedToUserIds, subID);
         const updated = await fastify.db.users.change(ownID, own);

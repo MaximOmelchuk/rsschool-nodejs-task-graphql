@@ -162,7 +162,7 @@ type Query {
   getPostById(id: String): PostEntity
   geMemberTypeById(id: String): MemberTypeEntity
   getAllUsersWithExtraData: [UserEntityWithExtraData]
-  getUserByIdWithExtraData: UserEntityWithExtraData
+  getUserByIdWithExtraData(id: String): UserEntityWithExtraData 
   getAllUsersWithProfile: [UserEntityWithProfile]
   getUserByIdWithPosts(id: String): [UserEntityWithPosts]
   getAllUsersWithSubscribersUsers: [UserEntityWithSubscribersParent]

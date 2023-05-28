@@ -23,7 +23,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       const query = (request.body as any)?.query;
       const variables = (request.body as any)?.variables;
 
-      return await appgql.graphql(query, undefined, variables);
+      return await appgql.graphql(query,undefined, variables);
       // return await appgql.graphql(query);
     }
   );

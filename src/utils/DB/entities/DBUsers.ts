@@ -19,7 +19,7 @@ export type UserEntityWithExtraData = {
   subscribedToUserIds: string[];
   posts?: PostEntity[];
   profile?: ProfileEntity | null;
-  memberTypes?: MemberTypeEntity[];
+  memberTypes?: MemberTypeEntity | null;
 };
 export type UserEntityWithProfile = {
   id: string;
@@ -27,7 +27,7 @@ export type UserEntityWithProfile = {
   lastName: string;
   email: string;
   subscribedToUserIds: string[];
-  userSubscribedTo?: ProfileEntity[];
+  userSubscribedTo?: (ProfileEntity | undefined)[] | undefined;
 };
 export type UserEntityWithPosts = {
   id: string;
@@ -35,7 +35,7 @@ export type UserEntityWithPosts = {
   lastName: string;
   email: string;
   subscribedToUserIds: string[];
-  subscribedToUser?: PostEntity[];
+  subscribedToUser?: (PostEntity | undefined)[];
 };
 export type UserEntityWithSubscribersChild = {
   id: string;
