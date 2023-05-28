@@ -80,6 +80,7 @@ type UserEntityWithProfile {
   email: String
   subscribedToUserIds: [String]
   profile: [ProfileEntity]
+  userSubscribedTo: [ProfileEntity]
 }
 type UserEntityWithPosts {
   id: ID
@@ -88,6 +89,7 @@ type UserEntityWithPosts {
   email: String
   subscribedToUserIds: [String]
   userSubscribedTo: [PostEntity]
+  posts: [PostEntity]
 }
 type UserEntityWithSubscribersChild {
   id: String

@@ -22,19 +22,16 @@ import DataLoader = require('dataloader');
 const getResolvers = (fastify: FastifyInstance) => {
   const usersDL = new DataLoader(async function (keys) {
     const allUsers = await fastify.db.users.findMany();
-    if (!keys.length) return allUsers;
     return keys?.map((id) => allUsers.find((user) => user.id === id));
   });
   const profilesDLUsersID = new DataLoader(async function (keys) {
     const allProfiles = await fastify.db.profiles.findMany();
-    if (!keys.length) return allProfiles;
     return keys?.map((id) =>
       allProfiles.find((profile) => profile.userId === id)
     );
   });
   const postsDLUsersID = new DataLoader(async function (keys) {
     const allPosts = await fastify.db.posts.findMany();
-    if (!keys.length) return [allPosts];
     const results = keys?.map((id) =>
       allPosts.filter((posts) => posts.userId === id)
     );
@@ -42,8 +39,7 @@ const getResolvers = (fastify: FastifyInstance) => {
   });
   const memberTypesDL = new DataLoader(async function (keys) {
     const allTypes = await fastify.db.memberTypes.findMany();
-    if (!keys.length) return allTypes;
-    return keys?.map((id) => allTypes.find((type) => type.id === id));
+    return keys?.map((id) => allTypes.find((type) => type && type.id === id));
   });
   const subscribersDL = new DataLoader(async function (keys) {
     const allUsers = await fastify.db.users.findMany();
@@ -55,16 +51,16 @@ const getResolvers = (fastify: FastifyInstance) => {
   return {
     Query: {
       getAllUsers: async () => {
-        return await usersDL.loadMany([]);
+        return await fastify.db.users.findMany();
       },
       getAllProfiles: async () => {
-        return await profilesDLUsersID.loadMany([]);
+        return await fastify.db.profiles.findMany();
       },
       getAllPosts: async () => {
-        return await postsDLUsersID.loadMany([]);
+        return await fastify.db.posts.findMany();
       },
       getAllMemberTypes: async () => {
-        return await memberTypesDL.loadMany([]);
+        return await fastify.db.memberTypes.findMany();
       },
       getUserById: async (_: unknown, context: any) => {
         return await fastify.db.users.findOne({
@@ -92,7 +88,7 @@ const getResolvers = (fastify: FastifyInstance) => {
       },
       getAllUsersWithExtraData: async () => {
         const users: UserEntity[] = [];
-        (await usersDL.loadMany([])).forEach((user) => {
+        (await fastify.db.users.findMany()).forEach((user) => {
           if (user && 'id' in user) users.push(user);
         });
         const usersIDs = users.map((user) => user.id);
@@ -142,7 +138,7 @@ const getResolvers = (fastify: FastifyInstance) => {
 
       getAllUsersWithProfile: async () => {
         const users: UserEntity[] = [];
-        (await usersDL.loadMany([])).forEach((user) => {
+        (await fastify.db.users.findMany()).forEach((user) => {
           if (user && 'id' in user) users.push(user);
         });
         const usersIDs = users.map((item) => item.id);
@@ -183,7 +179,7 @@ const getResolvers = (fastify: FastifyInstance) => {
 
       getAllUsersWithSubscribersUsers: async () => {
         const allUsers: UserEntity[] = [];
-        (await usersDL.loadMany([])).forEach((user) => {
+        (await fastify.db.users.findMany()).forEach((user) => {
           if (user && 'id' in user) allUsers.push(user);
         });
         const addSubs = async (users: UserEntity[], subsHasSubs: Boolean) => {
@@ -322,10 +318,10 @@ const getResolvers = (fastify: FastifyInstance) => {
       unsubscribeFrom: async (_: unknown, context: any) => {
         const ownID: string = context.ownID;
         const subID: any = context.subID;
-        const own: UserEntity | undefined = await usersDL.load(ownID);
-        if (!own) return null;
-        removeIfInclude(own.subscribedToUserIds, subID);
-        const updated = await fastify.db.users.change(ownID, own);
+        const sub: UserEntity | undefined = await usersDL.load(subID);
+        if (!sub) return null;
+        removeIfInclude(sub.subscribedToUserIds, ownID);
+        const updated = await fastify.db.users.change(subID, sub);
         return updated;
       },
     },
